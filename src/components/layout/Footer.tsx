@@ -3,7 +3,7 @@ import { Heart } from "lucide-react";
 import Logo from "../shared/Logo";
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   return (
     <footer className="w-full border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-[#0B1220] transition-colors">
