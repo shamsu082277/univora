@@ -1,10 +1,22 @@
 import Link from "next/link";
 import { ArrowRight, Calendar } from "lucide-react";
 import { mockUpcomingEvents } from "@/data/mockData";
+import { getFeaturedEvents } from "@/lib/api";
 import EventCard from "../shared/EventCard";
 import SectionHeading from "../shared/SectionHeading";
 
-export default function UpcomingEventsSection() {
+export default async function UpcomingEventsSection() {
+  let events = mockUpcomingEvents;
+  try {
+    const data = await getFeaturedEvents();
+    if (data && data.length > 0) {
+      events = data;
+    }
+  } catch (error) {
+    // Graceful fallback to mock data if backend is unavailable during build
+    events = mockUpcomingEvents;
+  }
+
   return (
     <section id="upcoming-events" className="py-16 sm:py-24 bg-gray-50/60 dark:bg-[#0B1220]/60 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -30,7 +42,7 @@ export default function UpcomingEventsSection() {
 
         {/* 6 Upcoming Events Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {mockUpcomingEvents.map((event) => (
+          {events.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
         </div>
@@ -50,4 +62,3 @@ export default function UpcomingEventsSection() {
     </section>
   );
 }
-
