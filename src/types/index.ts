@@ -1,14 +1,4 @@
-export interface IEvent {
-  id: string;
-  title: string;
-  category: "Community Support" | "Environmental Care" | "Donation & Charity" | "Education & Awareness";
-  location: string;
-  date: string;
-  thumbnail: string;
-  description: string;
-  organizer: string;
-  attendeesCount: number;
-}
+export * from "./event";
 
 export interface IStatItem {
   id: string;
@@ -46,4 +36,3 @@ export interface IGalleryItem {
   alt: string;
   aspectRatio?: "square" | "wide";
 }
-

@@ -292,3 +292,4 @@ export default function EventDetailPage({ params }: PageProps) {
     </div>
   );
 }
+
