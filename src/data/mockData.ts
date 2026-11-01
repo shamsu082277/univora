@@ -219,3 +219,4 @@ export const galleryItems: IGalleryItem[] = [
     alt: "A diverse group of cheerful volunteers standing together with raised hands",
   },
 ];
+

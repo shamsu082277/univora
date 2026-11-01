@@ -81,3 +81,4 @@ export default function FeatureCard({ feature, index }: FeatureCardProps) {
     </div>
   );
 }
+

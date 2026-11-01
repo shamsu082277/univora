@@ -53,3 +53,4 @@ export default function Logo({ showTagline = false, className = "", size = "md" 
     </Link>
   );
 }
+

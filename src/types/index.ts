@@ -46,3 +46,4 @@ export interface IGalleryItem {
   alt: string;
   aspectRatio?: "square" | "wide";
 }
+
