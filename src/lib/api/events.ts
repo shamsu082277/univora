@@ -103,3 +103,4 @@ export async function getMyJoinedEvents(): Promise<IEvent[]> {
     method: "GET",
   });
 }
+

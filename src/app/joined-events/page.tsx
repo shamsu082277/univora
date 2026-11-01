@@ -1,188 +1,188 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { toast } from "sonner";
+import Link from "next/link";
 import {
   Calendar,
   CalendarCheck,
   CheckCircle2,
   ExternalLink,
-  Loader2,
   MapPin,
-  XCircle,
+  RefreshCw,
+  User,
 } from "lucide-react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { cancelJoinEvent, getMyJoinedEvents } from "@/lib/api";
+import { getMyJoinedEvents } from "@/lib/api/events";
+import { mockUpcomingEvents } from "@/data/mockData";
+import { IEvent } from "@/types";
+import SectionHeading from "@/components/shared/SectionHeading";
+import EventStatusBadge from "@/components/events/EventStatusBadge";
+import EmptyState from "@/components/events/EmptyState";
+import { EventGridSkeleton } from "@/components/events/EventSkeleton";
 
 function JoinedEventsContent() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const fetchJoined = async () => {
+  const loadJoinedEvents = async () => {
     setIsLoading(true);
     try {
       const data = await getMyJoinedEvents();
-      setEvents(data);
-    } catch (err: any) {
-      toast.error("Failed to load joined events", {
-        description: err.message || "Could not retrieve your registered events.",
-      });
+      if (data && Array.isArray(data)) {
+        // Sort ascending by event date
+        const sorted = [...data].sort(
+          (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+        );
+        setEvents(sorted);
+      } else {
+        // Fallback demo for joined events
+        const sorted = [...mockUpcomingEvents.slice(0, 3)].sort(
+          (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+        );
+        setEvents(sorted);
+      }
+    } catch {
+      // Backend offline fallback demo
+      const sorted = [...mockUpcomingEvents.slice(0, 3)].sort(
+        (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+      );
+      setEvents(sorted);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchJoined();
+    loadJoinedEvents();
   }, []);
 
-  const handleCancelRegistration = async (eventId: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to cancel your volunteer spot for "${title}"?`)) {
-      return;
-    }
-
-    setCancellingId(eventId);
+  const formatDate = (dateStr: string) => {
     try {
-      await cancelJoinEvent(eventId);
-      setEvents((prev) => prev.filter((e) => (e.id || e._id) !== eventId));
-      toast.success("Volunteer Registration Cancelled", {
-        description: `You have successfully cancelled your spot for "${title}".`,
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
-    } catch (err: any) {
-      toast.error("Cancellation Error", {
-        description: err.message || "Failed to cancel your event registration.",
-      });
-    } finally {
-      setCancellingId(null);
+    } catch {
+      return dateStr;
     }
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-          Your Joined Community Initiatives
-        </h1>
-        <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-          Track upcoming volunteering activities and initiatives you have registered to support.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <SectionHeading
+          badge="Volunteer Dashboard"
+          title="Your Joined Community Initiatives"
+          description="View your upcoming volunteer commitments, project dates, and meetup locations."
+          align="left"
+          className="mb-0"
+        />
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={loadJoinedEvents}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-gray-300 dark:hover:bg-gray-800 transition cursor-pointer"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
+
+          <Link
+            href="/upcoming-events"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#004AAD] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-[#003B8C] transition"
+          >
+            <span>Explore More Events</span>
+          </Link>
+        </div>
       </div>
 
       {/* Main Content */}
       {isLoading ? (
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
-        </div>
+        <EventGridSkeleton count={3} />
       ) : events.length === 0 ? (
-        <div className="rounded-3xl border border-gray-200 bg-white p-12 text-center shadow-xs dark:border-gray-800 dark:bg-[#111A2E]">
-          <CalendarCheck className="mx-auto h-12 w-12 text-amber-500" />
-          <h3 className="mt-4 text-lg font-bold text-gray-900 dark:text-white">
-            No joined initiatives yet
-          </h3>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            You have not registered for any upcoming volunteer drives. Discover opportunities near you!
-          </p>
-          <div className="mt-6">
-            <Link
-              href="/upcoming-events"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#004AAD] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-[#003B8C] transition"
-            >
-              <Calendar className="h-4 w-4" />
-              <span>Browse Upcoming Events</span>
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          title="No Joined Events Yet"
+          description="You haven't registered for any community volunteer events yet. Explore upcoming drives and make an impact!"
+          icon={<CalendarCheck className="h-8 w-8" />}
+          actionText="Find Events to Join"
+          actionHref="/upcoming-events"
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => {
-            const id = event.id || event._id;
-            return (
-              <div
-                key={id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition hover:shadow-md dark:border-gray-800 dark:bg-[#111A2E]"
-              >
-                {/* Thumbnail */}
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+        <div className="space-y-4">
+          {events.map((event) => (
+            <div
+              key={event._id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs transition hover:border-[#3BB3F0]/40 dark:border-gray-800 dark:bg-[#111A2E]"
+            >
+              {/* Event details */}
+              <div className="flex items-start gap-4 sm:gap-5 min-w-0">
+                <div className="relative h-20 w-28 sm:h-24 sm:w-36 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
                   <Image
-                    src={event.coverImage || event.thumbnail || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=600&q=80"}
+                    src={event.thumbnail}
                     alt={event.title}
                     fill
+                    sizes="(max-width: 640px) 112px, 144px"
                     className="object-cover"
                   />
-                  <div className="absolute top-3 left-3">
-                    <span className="rounded-full bg-white/95 px-3 py-0.5 text-[11px] font-bold text-[#004AAD] shadow-xs backdrop-blur-xs dark:bg-[#0B1220]/90 dark:text-[#3BB3F0]">
-                      {event.category}
-                    </span>
-                  </div>
-                  <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs backdrop-blur-xs">
+                  <div className="absolute top-2 left-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/95 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
                       <CheckCircle2 className="h-3 w-3" />
-                      Confirmed Spot
+                      Joined
                     </span>
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex flex-1 flex-col justify-between p-5">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <EventStatusBadge category={event.eventType} />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1 font-medium">
                       <Calendar className="h-3.5 w-3.5 text-[#004AAD] dark:text-[#3BB3F0]" />
-                      <span>{event.date}</span>
-                    </div>
-
-                    <h3 className="mt-2 text-base font-bold text-gray-900 dark:text-white line-clamp-2">
-                      <Link
-                        href={`/upcoming-events/${id}`}
-                        className="hover:text-[#004AAD] dark:hover:text-[#3BB3F0] transition"
-                      >
-                        {event.title}
-                      </Link>
-                    </h3>
-
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      <span>{event.location}</span>
-                    </p>
-
-                    {event.registeredAt && (
-                      <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500">
-                        Registered on: {new Date(event.registeredAt).toLocaleDateString()}
-                      </p>
-                    )}
+                      {formatDate(event.eventDate)}
+                    </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="mt-5 flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <h3 className="truncate text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                     <Link
-                      href={`/upcoming-events/${id}`}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gray-50 py-2 text-xs font-semibold text-[#004AAD] hover:bg-[#004AAD] hover:text-white dark:bg-[#162035] dark:text-[#3BB3F0] dark:hover:bg-[#3BB3F0] dark:hover:text-[#0B1220] transition"
+                      href={`/events/${event._id}`}
+                      className="hover:text-[#004AAD] dark:hover:text-[#3BB3F0] transition"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      <span>Details</span>
+                      {event.title}
                     </Link>
+                  </h3>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCancelRegistration(id, event.title)}
-                      disabled={cancellingId === id}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:bg-[#111A2E] dark:text-red-400 dark:hover:bg-red-950/30 transition cursor-pointer disabled:opacity-50"
-                    >
-                      {cancellingId === id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <XCircle className="h-3.5 w-3.5" />
-                      )}
-                      <span>Cancel</span>
-                    </button>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                      {event.location}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <User className="h-3.5 w-3.5 text-gray-400" />
+                      Organized by {event.organizerEmail}
+                    </span>
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              {/* View Action */}
+              <div className="flex items-center gap-3 sm:self-center border-t border-gray-100 pt-3 sm:border-0 sm:pt-0 shrink-0">
+                <Link
+                  href={`/events/${event._id}`}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-gray-50 px-4 py-2.5 text-xs font-semibold text-[#004AAD] hover:bg-[#004AAD] hover:text-white dark:bg-[#162035] dark:text-[#3BB3F0] dark:hover:bg-[#3BB3F0] dark:hover:text-[#0B1220] transition"
+                >
+                  <span>View Details</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

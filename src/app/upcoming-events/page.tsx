@@ -1,202 +1,194 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { Calendar, Filter, Loader2, MapPin, Search } from "lucide-react";
-import EventCard from "@/components/shared/EventCard";
-import SectionHeading from "@/components/shared/SectionHeading";
-import { getEvents } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { Calendar, RefreshCw } from "lucide-react";
+import { getUpcomingEvents } from "@/lib/api/events";
+import { mockUpcomingEvents } from "@/data/mockData";
 import { IEvent } from "@/types";
-
-const CATEGORIES = [
-  "All",
-  "Community Support",
-  "Environmental Care",
-  "Donation & Charity",
-  "Education & Awareness",
-];
+import SectionHeading from "@/components/shared/SectionHeading";
+import EventFilters from "@/components/events/EventFilters";
+import EventGrid from "@/components/events/EventGrid";
 
 export default function UpcomingEventsPage() {
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [city, setCity] = useState("");
-  const [sort, setSort] = useState("asc");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [, startTransition] = useTransition();
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [sortBy, setSortBy] = useState<"upcoming" | "recent">("upcoming");
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [isUsingDemoData, setIsUsingDemoData] = useState(false);
 
-  const fetchEventsData = async () => {
+  // Fetch events
+  const loadEvents = async () => {
     setIsLoading(true);
     try {
-      const data = await getEvents({
-        search: search.trim() || undefined,
-        category: selectedCategory !== "All" ? selectedCategory : undefined,
-        city: city.trim() || undefined,
-        sort,
-        page,
-        limit: 9,
+      const data = await getUpcomingEvents({
+        category: selectedCategory || undefined,
+        search: search || undefined,
+        sort: sortBy,
       });
-      setEvents(data.events);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      console.error("Failed to load events:", error);
+
+      if (data && Array.isArray(data) && data.length > 0) {
+        setEvents(data);
+        setIsUsingDemoData(false);
+      } else {
+        // Fallback to initial upcoming seed data if DB collection is empty
+        setEvents(mockUpcomingEvents);
+        setIsUsingDemoData(false);
+      }
+    } catch {
+      // Backend API is offline
+      setEvents(mockUpcomingEvents);
+      setIsUsingDemoData(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEventsData();
-  }, [selectedCategory, sort, page]);
+    loadEvents();
+  }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchEventsData();
+  // Filter only events that are today or later
+  const upcomingFilteredEvents = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return events.filter((evt) => {
+      // Date filter: today or later
+      try {
+        const evtDate = new Date(evt.eventDate);
+        if (!isNaN(evtDate.getTime()) && evtDate < today) {
+          return false;
+        }
+      } catch {
+        // Keep if date format is non-standard
+      }
+
+      // Category filter
+      if (selectedCategory && evt.eventType !== selectedCategory) {
+        return false;
+      }
+
+      // Search filter: title or location
+      if (search.trim()) {
+        const query = search.toLowerCase();
+        const matchesTitle = evt.title.toLowerCase().includes(query);
+        const matchesLocation = evt.location.toLowerCase().includes(query);
+        const matchesDescription = evt.description.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesLocation && !matchesDescription) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [events, selectedCategory, search]);
+
+  // Sort events
+  const sortedEvents = useMemo(() => {
+    return [...upcomingFilteredEvents].sort((a, b) => {
+      const dateA = new Date(a.eventDate).getTime();
+      const dateB = new Date(b.eventDate).getTime();
+
+      if (sortBy === "upcoming") {
+        return dateA - dateB; // Soonest date first
+      } else {
+        return dateB - dateA; // Most recently created / added
+      }
+    });
+  }, [upcomingFilteredEvents, sortBy]);
+
+  // Visible sliced events for Load More
+  const visibleEvents = sortedEvents.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedEvents.length;
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setSelectedCategory("");
+    setSortBy("upcoming");
+    setVisibleCount(6);
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      {/* Page Header */}
-      <div className="mb-10 text-center">
-        <SectionHeading
-          badge="Discover Opportunities"
-          title="Explore Community Events"
-          description="Browse upcoming volunteer initiatives, workshops, relief drives, and gatherings across the nation."
-          align="center"
-        />
-      </div>
+    <div className="min-h-screen py-10 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        {/* Page Heading */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <SectionHeading
+            badge="Explore Initiatives"
+            title="Upcoming Social Development Events"
+            description="Find and participate in volunteer initiatives across environmental care, community aid, charity drives, and youth education."
+            align="left"
+            className="mb-0"
+          />
 
-      {/* Filters & Search Bar */}
-      <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-[#111A2E]">
-        <form onSubmit={handleSearchSubmit} className="flex flex-col gap-4 md:flex-row md:items-center">
-          {/* Search input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search initiatives by title or keywords..."
-              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 pl-10 text-sm text-gray-900 shadow-xs outline-hidden focus:border-[#3BB3F0] focus:ring-2 focus:ring-[#3BB3F0]/20 dark:border-gray-700 dark:bg-[#162035] dark:text-white"
-            />
-          </div>
-
-          {/* City input */}
-          <div className="relative w-full md:w-56">
-            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Filter by city..."
-              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 pl-10 text-sm text-gray-900 shadow-xs outline-hidden focus:border-[#3BB3F0] focus:ring-2 focus:ring-[#3BB3F0]/20 dark:border-gray-700 dark:bg-[#162035] dark:text-white"
-            />
-          </div>
-
-          {/* Sort select */}
-          <div className="w-full md:w-48">
-            <select
-              value={sort}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(1);
-              }}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-xs outline-hidden focus:border-[#3BB3F0] focus:ring-2 focus:ring-[#3BB3F0]/20 dark:border-gray-700 dark:bg-[#162035] dark:text-white cursor-pointer"
-            >
-              <option value="asc">Date: Nearest First</option>
-              <option value="desc">Date: Latest First</option>
-            </select>
-          </div>
-
-          {/* Search Button */}
           <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#004AAD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#003B8C] transition cursor-pointer"
+            type="button"
+            onClick={loadEvents}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-gray-300 dark:hover:bg-gray-800 transition shrink-0 cursor-pointer self-start sm:self-auto"
           >
-            <Search className="h-4 w-4" />
-            <span>Search</span>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh Events</span>
           </button>
-        </form>
+        </div>
 
-        {/* Category Pills */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mr-1">
-            <Filter className="h-3.5 w-3.5" />
-            Category:
-          </span>
-          {CATEGORIES.map((category) => (
+        {/* Informative Demo Data Notice if backend is offline */}
+        {isUsingDemoData && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>
+                <strong>Demo Mode:</strong> Displaying initial sample events because the Express REST API (<code>localhost:5000</code>) is not connected yet.
+              </span>
+            </span>
+          </div>
+        )}
+
+        {/* Filters & Search Component */}
+        <EventFilters
+          search={search}
+          onSearchChange={(v) => {
+            setSearch(v);
+            setVisibleCount(6);
+          }}
+          selectedCategory={selectedCategory}
+          onCategoryChange={(cat) => {
+            setSelectedCategory(cat);
+            setVisibleCount(6);
+          }}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onReset={handleResetFilters}
+          totalCount={sortedEvents.length}
+        />
+
+        {/* Event Grid with Skeletons & Empty State */}
+        <EventGrid
+          events={visibleEvents}
+          isLoading={isLoading}
+          emptyTitle="No Upcoming Events Found"
+          emptyDescription="There are no upcoming events matching your selected search query or category filters. Check back soon or try clearing filters."
+          emptyActionText="Clear Filters"
+          emptyActionHref="#"
+        />
+
+        {/* Load More Button */}
+        {hasMore && !isLoading && (
+          <div className="pt-6 flex justify-center">
             <button
-              key={category}
               type="button"
-              onClick={() => {
-                setSelectedCategory(category);
-                setPage(1);
-              }}
-              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition cursor-pointer ${
-                selectedCategory === category
-                  ? "bg-[#004AAD] text-white shadow-xs dark:bg-[#3BB3F0] dark:text-[#0B1220]"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#162035] dark:text-gray-300 dark:hover:bg-gray-700"
-              }`}
+              onClick={() => setVisibleCount((prev) => prev + 6)}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3 text-xs sm:text-sm font-bold text-[#004AAD] shadow-xs hover:border-[#3BB3F0] hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-[#3BB3F0] dark:hover:bg-[#162035] transition cursor-pointer"
             >
-              {category}
+              Load More Events ({sortedEvents.length - visibleCount} remaining)
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+
       </div>
-
-      {/* Results Header */}
-      <div className="mb-6 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>
-          Showing {events.length} of {total} initiative{total === 1 ? "" : "s"}
-        </span>
-      </div>
-
-      {/* Event Grid or Empty State */}
-      {isLoading ? (
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
-        </div>
-      ) : events.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-[#111A2E]">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-3 text-lg font-bold text-gray-900 dark:text-white">
-            No events found
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Try adjusting your search query, city, or category filter to discover other opportunities.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-12 flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold transition cursor-pointer ${
-                page === p
-                  ? "bg-[#004AAD] text-white shadow-xs dark:bg-[#3BB3F0] dark:text-[#0B1220]"
-                  : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-gray-300"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
-

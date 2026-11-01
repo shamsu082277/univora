@@ -46,3 +46,4 @@ export interface EventFilterParams {
   search?: string;
   sort?: "upcoming" | "recent";
 }
+
