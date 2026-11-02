@@ -41,7 +41,7 @@ export default function StatsSection() {
                   {stat.value}
                 </p>
                 {stat.highlight && (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                     {stat.highlight}
                   </p>
                 )}
@@ -53,4 +53,3 @@ export default function StatsSection() {
     </section>
   );
 }
-

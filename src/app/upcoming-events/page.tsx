@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, RefreshCw } from "lucide-react";
-import { getUpcomingEvents } from "@/lib/api/events";
-import { mockUpcomingEvents } from "@/data/mockData";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { getUpcomingEvents } from "@/lib/api";
 import { IEvent } from "@/types";
 import SectionHeading from "@/components/shared/SectionHeading";
 import EventFilters from "@/components/events/EventFilters";
@@ -12,15 +11,16 @@ import EventGrid from "@/components/events/EventGrid";
 export default function UpcomingEventsPage() {
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [sortBy, setSortBy] = useState<"upcoming" | "recent">("upcoming");
   const [visibleCount, setVisibleCount] = useState(6);
-  const [isUsingDemoData, setIsUsingDemoData] = useState(false);
 
-  // Fetch events
+  // Fetch real events from the API
   const loadEvents = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await getUpcomingEvents({
         category: selectedCategory || undefined,
@@ -28,18 +28,18 @@ export default function UpcomingEventsPage() {
         sort: sortBy,
       });
 
-      if (data && Array.isArray(data) && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setEvents(data);
-        setIsUsingDemoData(false);
       } else {
-        // Fallback to initial upcoming seed data if DB collection is empty
-        setEvents(mockUpcomingEvents);
-        setIsUsingDemoData(false);
+        setEvents([]);
       }
-    } catch {
-      // Backend API is offline
-      setEvents(mockUpcomingEvents);
-      setIsUsingDemoData(true);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to connect to the backend events API.";
+      setError(msg);
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +75,7 @@ export default function UpcomingEventsPage() {
         const query = search.toLowerCase();
         const matchesTitle = evt.title.toLowerCase().includes(query);
         const matchesLocation = evt.location.toLowerCase().includes(query);
-        const matchesDescription = evt.description.toLowerCase().includes(query);
+        const matchesDescription = evt.description?.toLowerCase().includes(query);
         if (!matchesTitle && !matchesLocation && !matchesDescription) {
           return false;
         }
@@ -94,7 +94,7 @@ export default function UpcomingEventsPage() {
       if (sortBy === "upcoming") {
         return dateA - dateB; // Soonest date first
       } else {
-        return dateB - dateA; // Most recently created / added
+        return dateB - dateA; // Most recently added
       }
     });
   }, [upcomingFilteredEvents, sortBy]);
@@ -135,15 +135,23 @@ export default function UpcomingEventsPage() {
           </button>
         </div>
 
-        {/* Informative Demo Data Notice if backend is offline */}
-        {isUsingDemoData && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>
-                <strong>Demo Mode:</strong> Displaying initial sample events because the Express REST API (<code>localhost:5000</code>) is not connected yet.
-              </span>
-            </span>
+        {/* API Error Notification */}
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 sm:p-5 text-xs sm:text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+              <div>
+                <p className="font-semibold">Unable to fetch upcoming events from server</p>
+                <p className="text-xs text-red-600/90 dark:text-red-400/90">{error}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={loadEvents}
+              className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition shrink-0 self-start sm:self-auto"
+            >
+              Retry Connection
+            </button>
           </div>
         )}
 
