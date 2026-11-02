@@ -78,7 +78,7 @@ export default function HeroSection() {
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-semibold text-gray-900 dark:text-white">12,500+ passionate volunteers</span> actively creating change.
+                <span className="font-semibold text-gray-900 dark:text-white">Growing grassroots community</span> of volunteers actively creating change.
               </p>
             </div>
 

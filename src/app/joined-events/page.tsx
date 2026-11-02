@@ -24,9 +24,11 @@ import { EventGridSkeleton } from "@/components/events/EventSkeleton";
 function JoinedEventsContent() {
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadJoinedEvents = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await getMyJoinedEvents();
       if (data && Array.isArray(data)) {
@@ -36,18 +38,15 @@ function JoinedEventsContent() {
         );
         setEvents(sorted);
       } else {
-        // Fallback demo for joined events
-        const sorted = [...mockUpcomingEvents.slice(0, 3)].sort(
-          (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
-        );
-        setEvents(sorted);
+        setEvents([]);
       }
-    } catch {
-      // Backend offline fallback demo
-      const sorted = [...mockUpcomingEvents.slice(0, 3)].sort(
-        (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
-      );
-      setEvents(sorted);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to load your joined events from the server.";
+      setError(msg);
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +102,20 @@ function JoinedEventsContent() {
           </Link>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 sm:p-5 text-xs sm:text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={loadJoinedEvents}
+            className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       {isLoading ? (
