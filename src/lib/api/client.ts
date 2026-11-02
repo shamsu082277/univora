@@ -2,7 +2,9 @@
  * Centralized API Client
  * Uses NEXT_PUBLIC_API_URL with real JWT Bearer token and credentials support.
  */
-import { authClient } from "@/lib/auth-client";
+import { getAuthToken } from "@/lib/auth/token";
+
+export { getAuthToken };
 
 const RAW_API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -20,33 +22,20 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
+export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
-}
-
-/**
- * Retrieve verified JWT access token from BetterAuth client
- */
-export async function getAuthToken(): Promise<string | null> {
-  try {
-    const clientWithToken = authClient as unknown as {
-      token?: () => Promise<{ data?: { token?: string } }>;
-    };
-    const res = await clientWithToken.token?.();
-    if (res?.data?.token) {
-      return res.data.token;
-    }
-  } catch {
-    // Graceful handling when offline or unauthenticated
-  }
-  return null;
+  requireAuth?: boolean;
 }
 
 export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { params, headers, ...restOptions } = options;
+  const { params, headers, requireAuth, ...restOptions } = options;
+
+  const method = (restOptions.method || "GET").toUpperCase();
+  const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+  const shouldRequireAuth = requireAuth === true || (isMutation && requireAuth !== false);
 
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   let url = `${API_BASE_URL}${cleanEndpoint}`;
@@ -68,10 +57,16 @@ export async function apiClient<T>(
     "Content-Type": "application/json",
   };
 
-  // Attach verified JWT Bearer token if available
+  // Retrieve JWT from centralized token utility
   const token = await getAuthToken();
+
   if (token) {
     defaultHeaders["Authorization"] = `Bearer ${token}`;
+  } else if (shouldRequireAuth) {
+    throw new ApiError(
+      "Authentication required. No valid JWT token found. Please sign in.",
+      401
+    );
   }
 
   try {
@@ -86,17 +81,31 @@ export async function apiClient<T>(
 
     if (!response.ok) {
       let errorMessage = `API request failed with status ${response.status}`;
-      let errorData;
+      let errorData: unknown;
       try {
         errorData = await response.json();
-        if (errorData?.message) {
-          errorMessage = errorData.message;
-        } else if (errorData?.error) {
-          errorMessage = errorData.error;
+        const obj = errorData as Record<string, unknown> | null;
+        if (typeof obj?.message === "string") {
+          errorMessage = obj.message;
+        } else if (typeof obj?.error === "string") {
+          errorMessage = obj.error;
         }
       } catch {
         // Response was not JSON
       }
+
+      if (response.status === 401) {
+        errorMessage =
+          (typeof (errorData as Record<string, unknown>)?.message === "string"
+            ? (errorData as Record<string, unknown>).message as string
+            : null) || "Unauthorized: Your session has expired or the token is invalid.";
+      } else if (response.status === 403) {
+        errorMessage =
+          (typeof (errorData as Record<string, unknown>)?.message === "string"
+            ? (errorData as Record<string, unknown>).message as string
+            : null) || "Forbidden: You do not have permission to perform this action.";
+      }
+
       throw new ApiError(errorMessage, response.status, errorData);
     }
 
@@ -114,7 +123,8 @@ export async function apiClient<T>(
     const message =
       error instanceof Error
         ? error.message
-        : "Failed to connect to the backend API server.";
-    throw new ApiError(message, 0);
+        : "Network error: Unable to connect to the backend server.";
+
+    throw new ApiError(message, 500);
   }
 }

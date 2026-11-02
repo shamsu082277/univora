@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   Calendar,
   CheckCircle2,
@@ -66,8 +66,12 @@ export default function EventForm({
     capacity?: string;
   }>({});
 
-  // Minimum allowed date is today's start
-  const todayStr = new Date().toISOString().slice(0, 16);
+  // Minimum allowed date is today's start (computed on client to avoid prerendering unstable date)
+  const [minDate, setMinDate] = useState<string>("");
+
+  useEffect(() => {
+    setMinDate(new Date().toISOString().slice(0, 16));
+  }, []);
 
   const validate = () => {
     const errs: typeof errors = {};
@@ -221,7 +225,7 @@ export default function EventForm({
             <input
               type="datetime-local"
               value={eventDate}
-              min={todayStr}
+              min={minDate || undefined}
               onChange={(e) => {
                 setEventDate(e.target.value);
                 if (errors.eventDate)

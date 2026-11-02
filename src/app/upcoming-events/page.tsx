@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { getUpcomingEvents } from "@/lib/api";
 import { IEvent } from "@/types";
 import SectionHeading from "@/components/shared/SectionHeading";
 import EventFilters from "@/components/events/EventFilters";
 import EventGrid from "@/components/events/EventGrid";
+
+const emptySubscribe = () => () => {};
+
+function getTodayMidnight() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 export default function UpcomingEventsPage() {
   const [events, setEvents] = useState<IEvent[]>([]);
@@ -16,6 +24,13 @@ export default function UpcomingEventsPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [sortBy, setSortBy] = useState<"upcoming" | "recent">("upcoming");
   const [visibleCount, setVisibleCount] = useState(6);
+
+  // Client-only runtime date subscription avoiding new Date() evaluation during static prerendering
+  const todayTimestamp = useSyncExternalStore(
+    emptySubscribe,
+    getTodayMidnight,
+    () => null
+  );
 
   // Fetch real events from the API
   const handleRefresh = async () => {
@@ -89,18 +104,17 @@ export default function UpcomingEventsPage() {
 
   // Filter only events that are today or later
   const upcomingFilteredEvents = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     return events.filter((evt) => {
-      // Date filter: today or later
-      try {
-        const evtDate = new Date(evt.eventDate);
-        if (!isNaN(evtDate.getTime()) && evtDate < today) {
-          return false;
+      // Date filter: today or later (evaluated on client once todayTimestamp is set)
+      if (todayTimestamp !== null) {
+        try {
+          const evtDate = new Date(evt.eventDate).getTime();
+          if (!isNaN(evtDate) && evtDate < todayTimestamp) {
+            return false;
+          }
+        } catch {
+          // Keep if date format is non-standard
         }
-      } catch {
-        // Keep if date format is non-standard
       }
 
       // Category filter
@@ -121,7 +135,7 @@ export default function UpcomingEventsPage() {
 
       return true;
     });
-  }, [events, selectedCategory, search]);
+  }, [events, selectedCategory, search, todayTimestamp]);
 
   // Sort events
   const sortedEvents = useMemo(() => {
