@@ -71,6 +71,7 @@ export default function UserNavDropdown() {
         {/* Avatar */}
         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#3BB3F0] to-[#004AAD] text-white">
           {userImage ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={userImage}
               alt={userName}

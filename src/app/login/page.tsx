@@ -11,7 +11,8 @@ import Logo from "@/components/shared/Logo";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect") || "/";
+  const redirectUrl =
+    searchParams.get("callbackUrl") || searchParams.get("redirect") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -260,7 +261,7 @@ function LoginForm() {
       <div className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
         Don&apos;t have an account yet?{" "}
         <Link
-          href={`/register${redirectUrl !== "/" ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""}`}
+          href={`/register${redirectUrl !== "/" ? `?callbackUrl=${encodeURIComponent(redirectUrl)}` : ""}`}
           className="font-semibold text-[#004AAD] hover:underline dark:text-[#3BB3F0]"
         >
           Register for free

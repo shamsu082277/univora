@@ -20,7 +20,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       const fullPath = searchParams?.toString()
         ? `${pathname}?${searchParams.toString()}`
         : pathname;
-      router.push(`/login?redirect=${encodeURIComponent(fullPath)}`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(fullPath)}`);
     }
   }, [isPending, session, pathname, searchParams, router]);
 

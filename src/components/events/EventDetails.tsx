@@ -84,7 +84,7 @@ export default function EventDetails({ event: initialEvent }: EventDetailsProps)
   const handleJoinClick = async () => {
     // If logged out: redirect to login preserving this URL
     if (!session) {
-      router.push(`/login?redirect=${encodeURIComponent(`/events/${event._id}`)}`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/events/${event._id}`)}`);
       return;
     }
 
