@@ -119,25 +119,12 @@ export default function EventDetails({ event: initialEvent }: EventDetailsProps)
         description: `You are confirmed for ${event.title}. We look forward to seeing you!`,
       });
     } catch (err: unknown) {
-      // If backend is offline or returned an error
       const message =
         err instanceof Error ? err.message : "Failed to register for this event.";
 
-      // If backend is offline, update UI state cleanly with clear feedback
-      if (message.includes("Failed to connect") || message.includes("status 0")) {
-        setEvent((prev) => ({
-          ...prev,
-          participantCount: prev.participantCount + 1,
-          joinedUsers: [...(prev.joinedUsers || []), currentUserId || ""],
-        }));
-        toast.success("Joined (Offline Demo)", {
-          description: "You've successfully joined in local demo mode while the Express API is offline.",
-        });
-      } else {
-        toast.error("Could Not Join Event", {
-          description: message,
-        });
-      }
+      toast.error("Could Not Join Event", {
+        description: message,
+      });
     } finally {
       setIsJoining(false);
     }

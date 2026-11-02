@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { getEventDetails } from "@/lib/api/events";
-import { mockUpcomingEvents } from "@/data/mockData";
+import { getEventDetails } from "@/lib/api";
 import { IEvent } from "@/types";
 import EventDetails from "@/components/events/EventDetails";
 import EmptyState from "@/components/events/EmptyState";
@@ -20,36 +19,38 @@ export default function EventDetailsPage() {
   useEffect(() => {
     if (!id) return;
 
+    let isMounted = true;
     const fetchDetails = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const data = await getEventDetails(id);
-        if (data && data._id) {
-          setEvent(data);
-        } else {
-          // Look in mock data if backend returned empty
-          const fallback = mockUpcomingEvents.find((e) => e._id === id);
-          if (fallback) {
-            setEvent(fallback);
+        if (isMounted) {
+          if (data && data._id) {
+            setEvent(data);
           } else {
             setError("Event not found.");
           }
         }
-      } catch {
-        // Fallback to mock data if backend is offline
-        const fallback = mockUpcomingEvents.find((e) => e._id === id);
-        if (fallback) {
-          setEvent(fallback);
-        } else {
-          setError("Event not found or could not be retrieved.");
+      } catch (err: unknown) {
+        if (isMounted) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : "Failed to load event details from the server.";
+          setError(msg);
         }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchDetails();
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   if (isLoading) {
@@ -70,7 +71,10 @@ export default function EventDetailsPage() {
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <EmptyState
           title="Event Not Found"
-          description="We couldn't locate the event you requested. It may have expired or been removed by its organizer."
+          description={
+            error ||
+            "We couldn't locate the event you requested. It may have expired or been removed by its organizer."
+          }
           actionText="Browse Upcoming Events"
           actionHref="/upcoming-events"
         />
@@ -80,4 +84,3 @@ export default function EventDetailsPage() {
 
   return <EventDetails event={event} />;
 }
-
