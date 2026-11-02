@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
@@ -18,13 +18,32 @@ import {
 import AuthGuard from "@/components/auth/AuthGuard";
 import { changePassword, updateUser, useSession } from "@/lib/auth-client";
 
+interface ProfileUser {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
 function ProfileContent() {
   const { data: session, isPending } = useSession();
   const user = session?.user;
 
+  if (isPending || !user) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
+      </div>
+    );
+  }
+
+  return <ProfileDetails key={user.id || user.email} user={user} />;
+}
+
+function ProfileDetails({ user }: { user: ProfileUser }) {
   // Profile Edit State
-  const [name, setName] = useState("");
-  const [image, setImage] = useState("");
+  const [name, setName] = useState(user.name || "");
+  const [image, setImage] = useState(user.image || "");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileErrors, setProfileErrors] = useState<{
     name?: string;
@@ -44,14 +63,6 @@ function ProfileContent() {
     newPassword?: string;
     confirmPassword?: string;
   }>({});
-
-  // Populate user data when session loads
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setImage(user.image || "");
-    }
-  }, [user]);
 
   // Dynamic new password criteria
   const hasMinLength = newPassword.length >= 6;
@@ -173,14 +184,6 @@ function ProfileContent() {
     }
   };
 
-  if (isPending || !user) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       {/* ================= USER BANNER ================= */}
@@ -190,6 +193,7 @@ function ProfileContent() {
             {/* Profile Avatar */}
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-[#3BB3F0] bg-gradient-to-br from-[#3BB3F0] to-[#004AAD] shadow-md">
               {image ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={image}
                   alt={name || "User avatar"}

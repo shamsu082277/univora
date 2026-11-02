@@ -333,6 +333,7 @@ export default function EventForm({
         {/* Thumbnail Image Live Preview */}
         {thumbnail && /^https?:\/\/.+\..+/.test(thumbnail.trim()) && (
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-800 dark:bg-[#162035]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={thumbnail}
               alt="Thumbnail preview"

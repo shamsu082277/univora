@@ -18,7 +18,7 @@ export default function UpcomingEventsPage() {
   const [visibleCount, setVisibleCount] = useState(6);
 
   // Fetch real events from the API
-  const loadEvents = async () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -46,8 +46,46 @@ export default function UpcomingEventsPage() {
   };
 
   useEffect(() => {
-    loadEvents();
-  }, []);
+    let isCancelled = false;
+
+    async function fetchEvents() {
+      setError(null);
+      try {
+        const data = await getUpcomingEvents({
+          category: selectedCategory || undefined,
+          search: search || undefined,
+          sort: sortBy,
+        });
+
+        if (!isCancelled) {
+          if (data && Array.isArray(data)) {
+            setEvents(data);
+          } else {
+            setEvents([]);
+          }
+        }
+      } catch (err: unknown) {
+        if (!isCancelled) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : "Failed to connect to the backend events API.";
+          setError(msg);
+          setEvents([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchEvents();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedCategory, search, sortBy]);
 
   // Filter only events that are today or later
   const upcomingFilteredEvents = useMemo(() => {
@@ -126,7 +164,7 @@ export default function UpcomingEventsPage() {
 
           <button
             type="button"
-            onClick={loadEvents}
+            onClick={handleRefresh}
             disabled={isLoading}
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-gray-300 dark:hover:bg-gray-800 transition shrink-0 cursor-pointer self-start sm:self-auto"
           >
@@ -147,7 +185,7 @@ export default function UpcomingEventsPage() {
             </div>
             <button
               type="button"
-              onClick={loadEvents}
+              onClick={handleRefresh}
               className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition shrink-0 self-start sm:self-auto"
             >
               Retry Connection

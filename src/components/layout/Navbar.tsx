@@ -120,6 +120,7 @@ export default function Navbar() {
               <div className="mb-2 flex items-center gap-3 rounded-xl bg-gray-50 p-3 dark:bg-[#111A2E]">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3BB3F0] to-[#004AAD] text-sm font-bold text-white overflow-hidden">
                   {session.user.image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={session.user.image}
                       alt={session.user.name}
