@@ -29,7 +29,10 @@ interface RequestOptions extends RequestInit {
  */
 export async function getAuthToken(): Promise<string | null> {
   try {
-    const res = await (authClient as any).token?.();
+    const clientWithToken = authClient as unknown as {
+      token?: () => Promise<{ data?: { token?: string } }>;
+    };
+    const res = await clientWithToken.token?.();
     if (res?.data?.token) {
       return res.data.token;
     }

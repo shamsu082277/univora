@@ -13,8 +13,7 @@ import {
   User,
 } from "lucide-react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { getMyJoinedEvents } from "@/lib/api/events";
-import { mockUpcomingEvents } from "@/data/mockData";
+import { getMyJoinedEvents } from "@/lib/api";
 import { IEvent } from "@/types";
 import SectionHeading from "@/components/shared/SectionHeading";
 import EventStatusBadge from "@/components/events/EventStatusBadge";
@@ -26,13 +25,51 @@ function JoinedEventsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadJoinedEvents = async () => {
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchJoined() {
+      setError(null);
+      try {
+        const data = await getMyJoinedEvents();
+        if (isMounted) {
+          if (Array.isArray(data)) {
+            const sorted = [...data].sort(
+              (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+            );
+            setEvents(sorted);
+          } else {
+            setEvents([]);
+          }
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : "Failed to load your joined events from the server.";
+          setError(msg);
+          setEvents([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchJoined();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleRefresh = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const data = await getMyJoinedEvents();
-      if (data && Array.isArray(data)) {
-        // Sort ascending by event date
+      if (Array.isArray(data)) {
         const sorted = [...data].sort(
           (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
         );
@@ -51,10 +88,6 @@ function JoinedEventsContent() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadJoinedEvents();
-  }, []);
 
   const formatDate = (dateStr: string) => {
     try {
@@ -86,7 +119,7 @@ function JoinedEventsContent() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={loadJoinedEvents}
+            onClick={handleRefresh}
             disabled={isLoading}
             className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-[#111A2E] dark:text-gray-300 dark:hover:bg-gray-800 transition cursor-pointer"
           >
@@ -109,7 +142,7 @@ function JoinedEventsContent() {
           <p>{error}</p>
           <button
             type="button"
-            onClick={loadJoinedEvents}
+            onClick={handleRefresh}
             className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition shrink-0"
           >
             Retry

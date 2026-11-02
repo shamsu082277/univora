@@ -95,7 +95,7 @@ function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signUp.email({
+      const { error } = await signUp.email({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,

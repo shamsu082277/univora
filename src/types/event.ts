@@ -39,7 +39,7 @@ export interface CreateEventInput {
   capacity?: number;
 }
 
-export interface UpdateEventInput extends Partial<CreateEventInput> {}
+export type UpdateEventInput = Partial<CreateEventInput>;
 
 export interface EventFilterParams {
   category?: string;

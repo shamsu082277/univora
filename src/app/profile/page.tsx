@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Calendar,
   Check,
-  CheckCircle2,
   Eye,
   EyeOff,
   Image as ImageIcon,
@@ -108,7 +106,7 @@ function ProfileContent() {
 
     setIsUpdatingProfile(true);
     try {
-      const { data, error } = await updateUser({
+      const { error } = await updateUser({
         name: name.trim(),
         image: image.trim(),
       });
@@ -142,7 +140,7 @@ function ProfileContent() {
 
     setIsChangingPassword(true);
     try {
-      const { data, error } = await changePassword({
+      const { error } = await changePassword({
         currentPassword,
         newPassword,
         revokeOtherSessions: true,
