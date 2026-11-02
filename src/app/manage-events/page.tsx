@@ -37,29 +37,29 @@ function ManageEventsContent() {
   const [editingEvent, setEditingEvent] = useState<IEvent | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   // Delete Dialog State
   const [deletingEvent, setDeletingEvent] = useState<IEvent | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const loadMyEvents = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await getMyCreatedEvents();
       if (data && Array.isArray(data)) {
         setEvents(data);
       } else {
-        // Fallback for demo when backend not yet returning user-specific events
-        const myUserId = session?.user?.id;
-        const myEmail = session?.user?.email;
-        const filtered = mockUpcomingEvents.filter(
-          (e) => e.organizerId === myUserId || e.organizerEmail === myEmail
-        );
-        // If none explicitly matched, supply first two sample initiatives for organizer test
-        setEvents(filtered.length > 0 ? filtered : mockUpcomingEvents.slice(0, 2));
+        setEvents([]);
       }
-    } catch {
-      // Backend offline fallback
-      setEvents(mockUpcomingEvents.slice(0, 2));
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to load your created events from the server.";
+      setError(msg);
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -93,23 +93,7 @@ function ManageEventsContent() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to update event.";
-
-      // Offline mode simulation
-      if (message.includes("Failed to connect") || message.includes("status 0")) {
-        setEvents((prev) =>
-          prev.map((evt) =>
-            evt._id === editingEvent._id
-              ? { ...evt, ...values, updatedAt: new Date().toISOString() }
-              : evt
-          )
-        );
-        toast.success("Event Updated (Offline Demo)", {
-          description: "Updated locally while Express API is offline.",
-        });
-        setEditingEvent(null);
-      } else {
-        toast.error("Update Failed", { description: message });
-      }
+      toast.error("Update Failed", { description: message });
     } finally {
       setIsUpdating(false);
     }
@@ -131,17 +115,7 @@ function ManageEventsContent() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to delete event.";
-
-      // Offline mode simulation
-      if (message.includes("Failed to connect") || message.includes("status 0")) {
-        setEvents((prev) => prev.filter((e) => e._id !== deletingEvent._id));
-        toast.success("Event Deleted (Offline Demo)", {
-          description: "Removed locally while Express API is offline.",
-        });
-        setDeletingEvent(null);
-      } else {
-        toast.error("Delete Failed", { description: message });
-      }
+      toast.error("Delete Failed", { description: message });
     } finally {
       setIsDeleting(false);
     }
@@ -193,6 +167,20 @@ function ManageEventsContent() {
           </Link>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 sm:p-5 text-xs sm:text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={loadMyEvents}
+            className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {isLoading ? (

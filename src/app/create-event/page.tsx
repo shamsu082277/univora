@@ -51,17 +51,9 @@ function CreateEventContent() {
           ? err.message
           : "Failed to publish event to the API.";
 
-      // Handle offline mode if backend is not started yet
-      if (message.includes("Failed to connect") || message.includes("status 0")) {
-        toast.success("Event Created (Offline Demo)", {
-          description: `"${values.title}" simulated successfully while Express API is offline.`,
-        });
-        router.push("/upcoming-events");
-      } else {
-        toast.error("Could Not Create Event", {
-          description: message,
-        });
-      }
+      toast.error("Could Not Create Event", {
+        description: message,
+      });
     } finally {
       setIsSubmitting(false);
     }
