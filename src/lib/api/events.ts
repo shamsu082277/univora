@@ -12,7 +12,7 @@ import {
 export async function getUpcomingEvents(
   params?: EventFilterParams
 ): Promise<IEvent[]> {
-  return apiClient<IEvent[]>("/events", {
+  const res = await apiClient<IEvent[] | { events: IEvent[] }>("/events", {
     method: "GET",
     params: {
       category: params?.category,
@@ -20,6 +20,12 @@ export async function getUpcomingEvents(
       sort: params?.sort || "upcoming",
     },
   });
+
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+    return (res as { events: IEvent[] }).events;
+  }
+  return [];
 }
 
 /**
@@ -27,16 +33,38 @@ export async function getUpcomingEvents(
  */
 export async function getRecentEvents(): Promise<IEvent[]> {
   try {
-    return await apiClient<IEvent[]>("/events/recent", {
+    const res = await apiClient<IEvent[] | { events: IEvent[] }>("/events/recent", {
       method: "GET",
     });
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+      return (res as { events: IEvent[] }).events;
+    }
   } catch {
-    // Fallback to /events with limit
-    return apiClient<IEvent[]>("/events", {
-      method: "GET",
-      params: { limit: 6, sort: "recent" },
-    });
+    // Continue to fallback
   }
+
+  try {
+    const featured = await apiClient<IEvent[] | { events: IEvent[] }>("/featured-events", {
+      method: "GET",
+    });
+    if (Array.isArray(featured)) return featured;
+    if (featured && Array.isArray((featured as { events: IEvent[] }).events)) {
+      return (featured as { events: IEvent[] }).events;
+    }
+  } catch {
+    // Continue to fallback
+  }
+
+  const fallback = await apiClient<IEvent[] | { events: IEvent[] }>("/events", {
+    method: "GET",
+    params: { limit: 6, sort: "recent" },
+  });
+  if (Array.isArray(fallback)) return fallback;
+  if (fallback && Array.isArray((fallback as { events: IEvent[] }).events)) {
+    return (fallback as { events: IEvent[] }).events;
+  }
+  return [];
 }
 
 /**
@@ -50,9 +78,13 @@ export async function getFeaturedEvents(): Promise<IEvent[]> {
  * Fetch single event details by ID
  */
 export async function getEventDetails(id: string): Promise<IEvent> {
-  return apiClient<IEvent>(`/events/${id}`, {
+  const res = await apiClient<IEvent | { event: IEvent }>(`/events/${id}`, {
     method: "GET",
   });
+  if (res && "event" in res && res.event) {
+    return res.event;
+  }
+  return res as IEvent;
 }
 
 /**
@@ -68,10 +100,20 @@ export async function getEventById(id: string): Promise<IEvent> {
 export async function createEvent(
   data: CreateEventInput & { organizerId?: string; organizerEmail?: string }
 ): Promise<IEvent> {
-  return apiClient<IEvent>("/events", {
+  const payload = {
+    ...data,
+    category: data.eventType,
+    coverImage: data.thumbnail,
+    date: data.eventDate,
+  };
+  const res = await apiClient<IEvent | { event: IEvent }>("/events", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
+  if (res && "event" in res && res.event) {
+    return res.event;
+  }
+  return res as IEvent;
 }
 
 /**
@@ -81,10 +123,19 @@ export async function updateEvent(
   id: string,
   data: UpdateEventInput
 ): Promise<IEvent> {
-  return apiClient<IEvent>(`/events/${id}`, {
+  const payload: Record<string, unknown> = { ...data };
+  if (data.eventType) payload.category = data.eventType;
+  if (data.thumbnail) payload.coverImage = data.thumbnail;
+  if (data.eventDate) payload.date = data.eventDate;
+
+  const res = await apiClient<IEvent | { event: IEvent }>(`/events/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
+  if (res && "event" in res && res.event) {
+    return res.event;
+  }
+  return res as IEvent;
 }
 
 /**
@@ -101,8 +152,8 @@ export async function deleteEvent(id: string): Promise<{ success: boolean }> {
  */
 export async function joinEvent(
   id: string
-): Promise<{ success: boolean; event: IEvent; message?: string }> {
-  return apiClient<{ success: boolean; event: IEvent; message?: string }>(
+): Promise<{ success: boolean; event?: IEvent; message?: string }> {
+  return apiClient<{ success: boolean; event?: IEvent; message?: string }>(
     `/events/${id}/join`,
     {
       method: "POST",
@@ -129,14 +180,25 @@ export async function cancelJoinEvent(
  */
 export async function getMyCreatedEvents(): Promise<IEvent[]> {
   try {
-    return await apiClient<IEvent[]>("/events/my-events", {
+    const res = await apiClient<IEvent[] | { events: IEvent[] }>("/events/my-events", {
       method: "GET",
     });
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+      return (res as { events: IEvent[] }).events;
+    }
   } catch {
-    return apiClient<IEvent[]>("/my-events", {
-      method: "GET",
-    });
+    // Try alias
   }
+
+  const res = await apiClient<IEvent[] | { events: IEvent[] }>("/my-events", {
+    method: "GET",
+  });
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+    return (res as { events: IEvent[] }).events;
+  }
+  return [];
 }
 
 /**
@@ -144,12 +206,23 @@ export async function getMyCreatedEvents(): Promise<IEvent[]> {
  */
 export async function getMyJoinedEvents(): Promise<IEvent[]> {
   try {
-    return await apiClient<IEvent[]>("/events/my-joined", {
+    const res = await apiClient<IEvent[] | { events: IEvent[] }>("/events/my-joined", {
       method: "GET",
     });
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+      return (res as { events: IEvent[] }).events;
+    }
   } catch {
-    return apiClient<IEvent[]>("/my-joined-events", {
-      method: "GET",
-    });
+    // Try alias
   }
+
+  const res = await apiClient<IEvent[] | { events: IEvent[] }>("/my-joined-events", {
+    method: "GET",
+  });
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray((res as { events: IEvent[] }).events)) {
+    return (res as { events: IEvent[] }).events;
+  }
+  return [];
 }

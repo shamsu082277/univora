@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { getEventDetails } from "@/lib/api";
@@ -8,7 +8,20 @@ import { IEvent } from "@/types";
 import EventDetails from "@/components/events/EventDetails";
 import EmptyState from "@/components/events/EmptyState";
 
-export default function EventDetailsPage() {
+function EventDetailsLoader() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+          Loading event details...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function EventDetailsContent() {
   const params = useParams();
   const id = params?.id as string;
 
@@ -83,4 +96,12 @@ export default function EventDetailsPage() {
   }
 
   return <EventDetails event={event} />;
+}
+
+export default function EventDetailsPage() {
+  return (
+    <Suspense fallback={<EventDetailsLoader />}>
+      <EventDetailsContent />
+    </Suspense>
+  );
 }

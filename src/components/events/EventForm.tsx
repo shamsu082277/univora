@@ -21,6 +21,12 @@ interface EventFormProps {
   cancelHref?: string;
 }
 
+const emptySubscribe = () => () => {};
+
+function getMinDateTime() {
+  return new Date().toISOString().slice(0, 16);
+}
+
 export default function EventForm({
   initialValues,
   onSubmit,
@@ -67,11 +73,11 @@ export default function EventForm({
   }>({});
 
   // Minimum allowed date is today's start (computed on client to avoid prerendering unstable date)
-  const [minDate, setMinDate] = useState<string>("");
-
-  useEffect(() => {
-    setMinDate(new Date().toISOString().slice(0, 16));
-  }, []);
+  const minDate = useSyncExternalStore(
+    emptySubscribe,
+    getMinDateTime,
+    () => ""
+  );
 
   const validate = () => {
     const errs: typeof errors = {};
