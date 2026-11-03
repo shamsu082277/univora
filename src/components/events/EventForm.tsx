@@ -15,7 +15,6 @@ import {
 import { CreateEventInput, EVENT_CATEGORIES, EventCategory } from "@/types/event";
 import {
   isTrustedImageUrl,
-  TRUSTED_IMAGE_HOSTS,
   validateImageUrl,
 } from "@/lib/constants/images";
 

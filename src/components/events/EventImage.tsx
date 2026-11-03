@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image, { ImageProps } from "next/image";
 import {
   DEFAULT_EVENT_PLACEHOLDER,
@@ -29,31 +29,20 @@ export default function EventImage({
   onError,
   ...props
 }: EventImageProps) {
-  // Determine if initial src is trusted
+  // Determine if the URL is trusted; if not, immediately use the fallback placeholder
   const isSafe = isTrustedImageUrl(src);
-  const initialResolvedSrc = isSafe && src ? src.trim() : fallbackSrc;
+  const resolvedSrc = isSafe && src ? src.trim() : fallbackSrc;
 
-  const [currentSrc, setCurrentSrc] = useState<string>(initialResolvedSrc);
-  const [hasError, setHasError] = useState(false);
+  // Track if a runtime loading error occurred for this URL
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  // Sync state if src or fallbackSrc prop changes
-  useEffect(() => {
-    if (isTrustedImageUrl(src) && src) {
-      setCurrentSrc(src.trim());
-      setHasError(false);
-    } else {
-      setCurrentSrc(fallbackSrc);
-      setHasError(true);
-    }
-  }, [src, fallbackSrc]);
+  // If the current image previously failed to load at runtime, display the fallback
+  const finalSrc = failedSrc === resolvedSrc ? fallbackSrc : resolvedSrc;
 
   const handleImageError = (
     e: React.SyntheticEvent<HTMLImageElement, Event>
   ) => {
-    if (!hasError) {
-      setHasError(true);
-      setCurrentSrc(fallbackSrc);
-    }
+    setFailedSrc(resolvedSrc);
     if (onError) {
       onError(e);
     }
@@ -62,7 +51,7 @@ export default function EventImage({
   return (
     <Image
       {...props}
-      src={currentSrc}
+      src={finalSrc}
       alt={alt || "Event Image"}
       className={className}
       onError={handleImageError}
