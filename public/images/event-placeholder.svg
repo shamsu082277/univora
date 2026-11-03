@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a192f"/>
+      <stop offset="50%" stop-color="#0e2444"/>
+      <stop offset="100%" stop-color="#143158"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#004AAD"/>
+      <stop offset="100%" stop-color="#3BB3F0"/>
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3BB3F0"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bgGrad)"/>
+  <rect width="800" height="500" fill="url(#grid)"/>
+
+  <!-- Decorative Ambient Glows -->
+  <circle cx="150" cy="120" r="140" fill="#004AAD" opacity="0.25" filter="blur(40px)"/>
+  <circle cx="650" cy="380" r="160" fill="#3BB3F0" opacity="0.2" filter="blur(50px)"/>
+
+  <!-- Central Illustrated Card / Emblem -->
+  <g transform="translate(400, 230)">
+    <!-- Outer Soft Glow Ring -->
+    <circle cx="0" cy="-20" r="64" fill="rgba(59, 179, 240, 0.08)"/>
+    <circle cx="0" cy="-20" r="52" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(59, 179, 240, 0.3)" stroke-width="1.5"/>
+
+    <!-- Calendar / Community Event Icon -->
+    <g transform="translate(-24, -44)" stroke="url(#iconGrad)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="8" width="42" height="36" rx="6"/>
+      <line x1="3" y1="18" x2="45" y2="18"/>
+      <line x1="14" y1="3" x2="14" y2="9"/>
+      <line x1="34" y1="3" x2="34" y2="9"/>
+      <!-- Heart in calendar -->
+      <path d="M24 33.5s-6-4.5-6-7.8c0-1.8 1.4-3.2 3.2-3.2 1.4 0 2.4.8 2.8 1.8.4-1 1.4-1.8 2.8-1.8 1.8 0 3.2 1.4 3.2 3.2 0 3.3-6 7.8-6 7.8z" fill="url(#iconGrad)" stroke="none"/>
+    </g>
+
+    <!-- Typography -->
+    <text x="0" y="54" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.5">
+      Univora Community Initiative
+    </text>
+    <text x="0" y="78" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#94A3B8" text-anchor="middle">
+      Social Impact &amp; Volunteer Event
+    </text>
+  </g>
+
+  <!-- Top Accent Bar -->
+  <rect x="0" y="0" width="800" height="4" fill="url(#accentGrad)"/>
+</svg>

@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle2,
   Image as ImageIcon,
+  Info,
   Loader2,
   MapPin,
   Tag,
@@ -12,6 +13,11 @@ import {
   Users,
 } from "lucide-react";
 import { CreateEventInput, EVENT_CATEGORIES, EventCategory } from "@/types/event";
+import {
+  isTrustedImageUrl,
+  TRUSTED_IMAGE_HOSTS,
+  validateImageUrl,
+} from "@/lib/constants/images";
 
 interface EventFormProps {
   initialValues?: Partial<CreateEventInput>;
@@ -115,11 +121,9 @@ export default function EventForm({
     }
 
     // Thumbnail validation
-    if (!thumbnail.trim()) {
-      errs.thumbnail = "Thumbnail image URL is required.";
-    } else if (!/^https?:\/\/.+\..+/.test(thumbnail.trim())) {
-      errs.thumbnail =
-        "Please enter a valid image URL starting with http:// or https://.";
+    const imgCheck = validateImageUrl(thumbnail);
+    if (!imgCheck.isValid) {
+      errs.thumbnail = imgCheck.error;
     }
 
     // Description validation
@@ -336,12 +340,17 @@ export default function EventForm({
             }`}
           />
         </div>
-        {errors.thumbnail && (
+        {errors.thumbnail ? (
           <p className="mt-1 text-xs text-red-500">{errors.thumbnail}</p>
+        ) : (
+          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <Info className="h-3 w-3 inline text-[#3BB3F0]" />
+            Supported HTTPS providers: Unsplash (images.unsplash.com), Cloudinary (res.cloudinary.com), Pexels, Imgur.
+          </p>
         )}
 
         {/* Thumbnail Image Live Preview */}
-        {thumbnail && /^https?:\/\/.+\..+/.test(thumbnail.trim()) && (
+        {thumbnail && isTrustedImageUrl(thumbnail) && (
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-800 dark:bg-[#162035]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

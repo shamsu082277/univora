@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -24,6 +23,7 @@ import { useSession } from "@/lib/auth-client";
 import { joinEvent } from "@/lib/api/events";
 import EventStatusBadge from "./EventStatusBadge";
 import ParticipantCounter from "./ParticipantCounter";
+import EventImage from "./EventImage";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -165,7 +165,7 @@ export default function EventDetails({ event: initialEvent }: EventDetailsProps)
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-md dark:border-gray-800 dark:bg-[#111A2E]">
         {/* Large Thumbnail Banner */}
         <div className="relative aspect-[16/9] sm:aspect-[21/9] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-          <Image
+          <EventImage
             src={event.thumbnail}
             alt={event.title}
             fill

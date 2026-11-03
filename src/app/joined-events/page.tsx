@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Calendar,
@@ -19,6 +18,7 @@ import SectionHeading from "@/components/shared/SectionHeading";
 import EventStatusBadge from "@/components/events/EventStatusBadge";
 import EmptyState from "@/components/events/EmptyState";
 import { EventGridSkeleton } from "@/components/events/EventSkeleton";
+import EventImage from "@/components/events/EventImage";
 
 function JoinedEventsContent() {
   const [events, setEvents] = useState<IEvent[]>([]);
@@ -171,7 +171,7 @@ function JoinedEventsContent() {
               {/* Event details */}
               <div className="flex items-start gap-4 sm:gap-5 min-w-0">
                 <div className="relative h-20 w-28 sm:h-24 sm:w-36 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
-                  <Image
+                  <EventImage
                     src={event.thumbnail}
                     alt={event.title}
                     fill

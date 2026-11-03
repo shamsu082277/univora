@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { IBlogArticle } from "@/types";
+import EventImage from "../events/EventImage";
 
 interface BlogCardProps {
   article: IBlogArticle;
@@ -12,7 +12,7 @@ export default function BlogCard({ article }: BlogCardProps) {
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#3BB3F0]/50 hover:shadow-lg dark:border-gray-800 dark:bg-[#111A2E] dark:hover:border-[#3BB3F0]/40">
       {/* Cover Image */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-        <Image
+        <EventImage
           src={article.coverImage}
           alt={article.title}
           fill

@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { IEvent } from "@/types";
 import EventStatusBadge from "../events/EventStatusBadge";
+import EventImage from "../events/EventImage";
 
 interface EventCardProps {
   event: IEvent;
@@ -31,7 +31,7 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#3BB3F0]/50 hover:shadow-lg dark:border-gray-800 dark:bg-[#111A2E] dark:hover:border-[#3BB3F0]/40">
       {/* Event Thumbnail */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-        <Image
+        <EventImage
           src={event.thumbnail}
           alt={event.title}
           fill

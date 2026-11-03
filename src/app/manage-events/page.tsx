@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -26,6 +25,7 @@ import DeleteConfirmationDialog from "@/components/events/DeleteConfirmationDial
 import EventForm from "@/components/events/EventForm";
 import EmptyState from "@/components/events/EmptyState";
 import { EventGridSkeleton } from "@/components/events/EventSkeleton";
+import EventImage from "@/components/events/EventImage";
 
 function ManageEventsContent() {
   const { data: session } = useSession();
@@ -233,7 +233,7 @@ function ManageEventsContent() {
               {/* Event Info */}
               <div className="flex items-start gap-4 sm:gap-5 min-w-0">
                 <div className="relative h-20 w-28 sm:h-24 sm:w-36 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
-                  <Image
+                  <EventImage
                     src={event.thumbnail}
                     alt={event.title}
                     fill
