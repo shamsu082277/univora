@@ -15,7 +15,7 @@ import {
   User,
   UserPlus,
 } from "lucide-react";
-import { signUp } from "@/lib/auth-client";
+import { signIn, signUp } from "@/lib/auth-client";
 import Logo from "@/components/shared/Logo";
 
 function RegisterForm() {
@@ -32,6 +32,7 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Field validation errors
   const [errors, setErrors] = useState<{
@@ -86,6 +87,33 @@ function RegisterForm() {
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await signIn.social({
+        provider: "google",
+        callbackURL: redirectUrl,
+      });
+
+      if (error) {
+        toast.error("Google Sign-In Failed", {
+          description:
+            error.message || "Failed to initiate Google authentication.",
+        });
+        setIsGoogleLoading(false);
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Could not reach the authentication server. Please check backend OAuth configuration.";
+      toast.error("Connection Error", {
+        description: message,
+      });
+      setIsGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -145,8 +173,49 @@ function RegisterForm() {
         </p>
       </div>
 
+      {/* Social Google Login Button */}
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading || isGoogleLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-xs transition hover:bg-gray-50 hover:text-gray-900 disabled:opacity-60 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-[#162035] dark:text-gray-200 dark:hover:bg-gray-800"
+        >
+          {isGoogleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-[#004AAD] dark:text-[#3BB3F0]" />
+          ) : (
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+              />
+            </svg>
+          )}
+          <span>Continue with Google</span>
+        </button>
+      </div>
+
+      <div className="relative my-6 flex items-center justify-center">
+        <div className="w-full border-t border-gray-200 dark:border-gray-800" />
+        <span className="absolute bg-white px-3 text-xs uppercase tracking-wider text-gray-400 dark:bg-[#111A2E]">
+          Or register with email
+        </span>
+      </div>
+
       {/* Registration Form */}
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Full Name */}
         <div>
           <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
