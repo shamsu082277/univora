@@ -32,10 +32,17 @@ export async function proxy(request: NextRequest) {
   // Validate session against BetterAuth server if token exists
   if (sessionToken) {
     try {
-      const authServerUrl =
-        process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:5000";
+      const rawServerUrl =
+        process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        process.env.BACKEND_API_URL ||
+        "http://localhost:5000";
+      const authServerUrl = rawServerUrl
+        .replace(/\/api\/?$/, "")
+        .replace(/\/+$/, "");
+
       const response = await fetch(
-        `${authServerUrl.replace(/\/+$/, "")}/api/auth/get-session`,
+        `${authServerUrl}/api/auth/get-session`,
         {
           headers: {
             cookie: request.headers.get("cookie") || "",

@@ -92,9 +92,19 @@ function RegisterForm() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
+      const origin =
+        typeof window !== "undefined" && window.location.origin
+          ? window.location.origin
+          : "http://localhost:3000";
+
+      const targetUrl =
+        redirectUrl.startsWith("http://") || redirectUrl.startsWith("https://")
+          ? redirectUrl
+          : `${origin}${redirectUrl.startsWith("/") ? redirectUrl : `/${redirectUrl}`}`;
+
       const { error } = await signIn.social({
         provider: "google",
-        callbackURL: redirectUrl,
+        callbackURL: targetUrl,
       });
 
       if (error) {

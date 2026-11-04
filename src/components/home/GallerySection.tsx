@@ -1,4 +1,4 @@
-import Image from "next/image";
+import EventImage from "../events/EventImage";
 import { galleryItems } from "@/data/mockData";
 import SectionHeading from "../shared/SectionHeading";
 
@@ -22,7 +22,7 @@ export default function GallerySection() {
               key={item.id}
               className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-[#111A2E]"
             >
-              <Image
+              <EventImage
                 src={item.imageUrl}
                 alt={item.alt}
                 fill

@@ -16,7 +16,6 @@ import {
   UserCheck,
 } from "lucide-react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import AuthStatusChecker from "@/components/auth/AuthStatusChecker";
 import { changePassword, updateUser, useSession } from "@/lib/auth-client";
 
 interface ProfileUser {
@@ -602,9 +601,6 @@ function ProfileDetails({ user }: { user: ProfileUser }) {
               </div>
             </div>
           </div>
-
-          {/* Authentication Diagnostics */}
-          <AuthStatusChecker />
 
           <div className="rounded-2xl border border-[#3BB3F0]/20 bg-gradient-to-br from-[#3BB3F0]/10 to-transparent p-5 text-xs text-gray-700 dark:text-gray-300">
             <h4 className="font-bold text-[#004AAD] dark:text-[#3BB3F0]">
