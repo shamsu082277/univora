@@ -22,14 +22,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for BetterAuth session cookie
+  // Check for BetterAuth session cookie on the request
   const sessionToken =
     request.cookies.get("better-auth.session_token")?.value ||
     request.cookies.get("__Secure-better-auth.session_token")?.value;
 
-  let isAuthenticated = false;
-
-  // Validate session against BetterAuth server if token exists
+  // 1. If a session cookie is present on the frontend, validate it against the BetterAuth server
   if (sessionToken) {
     try {
       const rawServerUrl =
@@ -54,28 +52,29 @@ export async function proxy(request: NextRequest) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data && (data.session || data.user)) {
-          isAuthenticated = true;
+        const hasSession = Boolean(data && (data.session || data.user));
+
+        // If authenticated user visits login or register, redirect to homepage
+        if (isAuthRoute && hasSession) {
+          return NextResponse.redirect(new URL("/", request.url));
+        }
+
+        // If cookie is present but explicitly invalid on a protected route, redirect to login
+        if (isProtectedRoute && !hasSession) {
+          const callbackUrl = `${pathname}${search}`;
+          const loginUrl = new URL("/login", request.url);
+          loginUrl.searchParams.set("callbackUrl", callbackUrl);
+          return NextResponse.redirect(loginUrl);
         }
       }
     } catch {
-      isAuthenticated = false;
+      // If validation fails or server is offline, pass through to client-side AuthGuard
     }
   }
 
-  // Redirect unauthenticated users from protected routes to login
-  if (isProtectedRoute && !isAuthenticated) {
-    const callbackUrl = `${pathname}${search}`;
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", callbackUrl);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Redirect authenticated users from login and register to homepage
-  if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
+  // In cross-domain deployments (e.g. frontend on univora-pi.vercel.app and backend on univora-server.vercel.app),
+  // Better Auth session cookies are stored on the backend domain and cannot be read by Next.js server middleware.
+  // We pass the request to the page so client-side <AuthGuard> verifies the session via CORS credentials.
   return NextResponse.next();
 }
 

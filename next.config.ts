@@ -46,24 +46,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  async rewrites() {
-    const backendUrl =
-      process.env.BACKEND_API_URL ||
-      process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://localhost:5000";
-
-    const cleanBackendUrl = backendUrl
-      .replace(/\/api\/?$/, "")
-      .replace(/\/+$/, "");
-
-    return [
-      {
-        source: "/api/auth/:path*",
-        destination: `${cleanBackendUrl}/api/auth/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
